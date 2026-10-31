@@ -37,23 +37,20 @@ if st.button("Analyze URL", type="primary"):
 
             score = report["risk_score"]
             st.metric("Heuristic Risk Score", f"{score}/100")
+            
             if score >= 50:
-                st.error("Risk level: High")
+                st.error("Risk level: High — multiple suspicious indicators detected.")
             elif score >= 20:
-                st.warning("Risk level: Moderate")
+                st.warning("Risk level: Moderate — suspicious indicators detected.")
             elif score > 0:
-                st.info("Risk level: Low")
+                st.info("Risk level: Low — some indicators were detected.")
             else:
-                st.success("No current rules triggered")
-            if score >= 50:
-                st.error("Multiple suspicious indicators detected.")
-            elif score > 0:
-                st.warning("Some suspicious indicators detected.")
-            else:
-                st.info(
-                    "No indicators from the current rules were detected. "
-                    "This does not mean the URL is safe."
-                )
+                st.success("No current rules triggered.")
+
+            st.caption(
+                "A low score or zero findings does not guarantee that a URL is safe."
+        )
+
 
             st.subheader("Detection Findings")
 
