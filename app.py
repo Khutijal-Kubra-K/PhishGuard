@@ -1,5 +1,6 @@
 
 import streamlit as st
+import json
 from app.detector import analyze_url
 
 # Page configuration
@@ -72,6 +73,12 @@ if st.button("Analyze URL", type="primary"):
                 st.json(report["features"])
 
             st.caption(report["note"])
+            st.download_button(
+                label="Download Analysis Report (JSON)",
+                data=json.dumps(report, indent=4),
+                file_name="phishguard_report.json",
+                mime="application/json",
+            )
 
         except (ValueError, TypeError) as error:
             st.error(f"Could not analyze this input: {error}")

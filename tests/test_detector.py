@@ -49,3 +49,13 @@ def test_url_shortener_triggers_finding():
 
     assert "URL_SHORTENER" in rules
 
+def test_report_contains_expected_fields():
+    report = analyze_url("https://paypal.com@evil.example/login")
+
+    assert report["url"] == "https://paypal.com@evil.example/login"
+    assert report["risk_score"] == 20
+    assert report["features"]["hostname"] == "evil.example"
+    assert report["features"]["has_at_symbol"] is True
+    assert report["findings"][0]["rule"] == "AT_SYMBOL"
+    assert "not a probability" in report["note"]
+

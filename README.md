@@ -16,6 +16,7 @@ The application provides a simple Streamlit dashboard that displays a heuristic 
 - **Interactive dashboard:** Analyze URLs through a Streamlit web interface.
 - **Input validation:** Rejects empty URLs, unsupported schemes, and URLs without hostnames.
 - **Automated tests:** Uses pytest to test feature extraction and detection logic.
+- **Downloadable reports:** Export URL analysis results as formatted JSON, including the risk score, findings, extracted features, and limitations.
 
 ## Detection Rules
 
@@ -80,6 +81,7 @@ python -m pytest -v
 3. The detector evaluates the features against predefined rules.
 4. Triggered rules contribute points to a heuristic score.
 5. The dashboard displays the score, findings, and extracted features.
+6. The user can download the analysis report as a JSON file.
 
 ## Limitations
 
