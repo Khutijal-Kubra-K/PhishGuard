@@ -3,6 +3,9 @@
 PhishGuard is a Python-based cybersecurity project that analyzes URL structures and identifies potentially suspicious indicators using explainable, rule-based detection.
 
 The application provides a simple Streamlit dashboard that displays a heuristic risk score, detection findings, and extracted URL features.
+## Dashboard Preview
+
+![PhishGuard dashboard](screenshots/dashboard.png)
 
 ## Features
 
