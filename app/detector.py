@@ -78,6 +78,34 @@ def analyze_url(url: str) -> dict:
         score += 20
 
     score = min(score, 100)
+    
+    # Rule 7: Suspicious keywords in the URL
+    suspicious_keywords = {
+        "verify-account",
+        "password-reset",
+        "secure-login",
+        "account-verification",
+    }
+
+    normalized_url = url.lower()
+    matched_keywords = [
+        keyword
+        for keyword in suspicious_keywords
+        if keyword in normalized_url
+    ]
+
+    if matched_keywords:
+        findings.append({
+            "rule": "SUSPICIOUS_KEYWORD",
+            "severity": "low",
+            "reason": (
+                "The URL contains potentially suspicious keyword(s): "
+                + ", ".join(matched_keywords)
+                + ". These words can also appear in legitimate URLs."
+            )
+        })
+        score += 5
+
 
     return {
         "url": url,

@@ -59,3 +59,13 @@ def test_report_contains_expected_fields():
     assert report["findings"][0]["rule"] == "AT_SYMBOL"
     assert "not a probability" in report["note"]
 
+def test_suspicious_keyword_triggers_finding():
+    report = analyze_url(
+        "https://example.com/verify-account"
+    )
+
+    rules = [item["rule"] for item in report["findings"]]
+
+    assert "SUSPICIOUS_KEYWORD" in rules
+    assert report["risk_score"] == 5
+
