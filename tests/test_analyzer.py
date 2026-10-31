@@ -74,3 +74,24 @@ def test_rejects_missing_hostname():
 
     with pytest.raises(ValueError):
         extract_features("https://")
+
+def test_hostname_with_whitespace_is_rejected():
+    import pytest
+    from app.analyzer import extract_features
+
+    with pytest.raises(ValueError, match="whitespace"):
+        extract_features("https://exa mple.com")
+
+
+def test_hostname_label_starting_with_hyphen_is_rejected():
+    import pytest
+    from app.analyzer import extract_features
+
+    with pytest.raises(ValueError, match="hyphen"):
+        extract_features("https://-example.com")
+def test_empty_hostname_label_is_rejected():
+    import pytest
+    from app.analyzer import extract_features
+
+    with pytest.raises(ValueError, match="empty label"):
+        extract_features("https://example..com")

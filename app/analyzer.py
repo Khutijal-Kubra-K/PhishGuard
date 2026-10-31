@@ -15,7 +15,6 @@ def extract_features(url: str) -> dict:
     if "://" not in url:
         url = "https://" + url
 
-   
     # 2. Parse URL
     try:
         parsed = urlsplit(url)
@@ -31,6 +30,20 @@ def extract_features(url: str) -> dict:
     if not hostname:
         raise ValueError("URL must contain a hostname")
 
+    if any(char.isspace() for char in hostname):
+        raise ValueError("Hostname cannot contain whitespace")
+
+    # Validate hostname labels
+    labels = hostname.rstrip(".").split(".")
+
+    for label in labels:
+        if not label:
+            raise ValueError("Hostname contains an empty label")
+
+        if label.startswith("-") or label.endswith("-"):
+            raise ValueError(
+                "Hostname labels cannot start or end with a hyphen"
+            )
 
     # 4. Calculate lengths
     url_length = len(url)
@@ -44,10 +57,9 @@ def extract_features(url: str) -> dict:
         has_ip_host = False
 
     # 6. Count subdomains
-    if has_ip_host or not hostname:
+    if has_ip_host:
         subdomain_count = 0
     else:
-        labels = hostname.split(".")
         subdomain_count = max(0, len(labels) - 2)
 
     # 7. Detect @ symbol
