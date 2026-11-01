@@ -3,6 +3,7 @@ import streamlit as st
 import json
 from app.report_export import generate_csv_report
 from app.detector import analyze_url
+from app.reputation import check_url_reputation
 
 
 
@@ -34,8 +35,34 @@ if st.button("Analyze URL", type="primary"):
     else:
         try:
             report = analyze_url(url.strip())
-
+            reputation = check_url_reputation(url.strip())
+            report["reputation"] = reputation
             st.divider()
+            st.divider()
+            st.subheader("Threat Intelligence — Google Safe Browsing")
+
+            if reputation["status"] == "unsafe":
+                st.error("Known threat detected")
+                st.write(reputation["message"])
+
+                if reputation["threat_types"]:
+                    st.write(
+                        "Threat types: "
+                    + ", ".join(reputation["threat_types"])
+                )
+
+            elif reputation["status"] == "safe":
+                st.success("No known threats reported")
+                st.write(reputation["message"])
+
+            else:
+                st.warning("Threat intelligence check unavailable")
+                st.write(reputation["message"])
+
+            st.caption(
+                "Threat intelligence is one signal, not a guarantee of safety. "
+                "An unavailable check does not mean the URL is safe."
+        )
             st.subheader("Analysis Results")
 
             score = report["risk_score"]
