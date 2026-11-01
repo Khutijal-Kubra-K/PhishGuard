@@ -1,7 +1,10 @@
 
 import streamlit as st
 import json
+from app.report_export import generate_csv_report
 from app.detector import analyze_url
+
+
 
 # Page configuration
 st.set_page_config(
@@ -95,12 +98,23 @@ if st.button("Analyze URL", type="primary"):
                 st.json(report["features"])
 
             st.caption(report["note"])
+            
+            csv_data = generate_csv_report(report)
+
             st.download_button(
                 label="Download Analysis Report (JSON)",
                 data=json.dumps(report, indent=4),
                 file_name="phishguard_report.json",
                 mime="application/json",
             )
+            
+            st.download_button(
+                label="Download Analysis Report (CSV)",
+                data=csv_data,
+                file_name="phishguard_report.csv",
+                mime="text/csv",
+            )
+
 
         except (ValueError, TypeError) as error:
             st.error(f"Could not analyze this input: {error}")
