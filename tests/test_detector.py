@@ -69,3 +69,11 @@ def test_suspicious_keyword_triggers_finding():
     assert "SUSPICIOUS_KEYWORD" in rules
     assert report["risk_score"] == 5
 
+def test_punycode_hostname_triggers_finding():
+    report = analyze_url("https://xn--e1afmkfd.example/login")
+
+    rules = [item["rule"] for item in report["findings"]]
+
+    assert "PUNYCODE_HOST" in rules
+    assert report["risk_score"] == 5
+

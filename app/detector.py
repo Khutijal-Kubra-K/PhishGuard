@@ -76,6 +76,21 @@ def analyze_url(url: str) -> dict:
             "reason": "The URL contains an @ symbol, which can obscure the hostname."
         })
         score += 20
+    
+    # Rule 8: Punycode hostname
+    hostname = features["hostname"].lower()
+
+    if "xn--" in hostname:
+        findings.append({
+            "rule": "PUNYCODE_HOST",
+            "severity": "low",
+            "reason": (
+                "The hostname contains a punycode label. "
+                "Internationalized domains can be legitimate, "
+                "so this indicator alone does not imply phishing."
+            )
+        })
+        score += 5
 
     score = min(score, 100)
     

@@ -27,7 +27,11 @@ The application provides a simple Streamlit dashboard that displays a heuristic 
 | `LONG_URL` | The URL exceeds the configured length threshold. |
 | `MANY_SUBDOMAINS` | The hostname contains three or more subdomains. |
 | `AT_SYMBOL` | The URL contains an `@` symbol. |
-| `URL_SHORTENER` | The hostname matches a configured URL-shortening service. |
+| `URL_SHORTENER` | The hostname matches a configured URL-shortening service. 
+
+- **Suspicious URL keywords:** Flags selected keywords that may warrant closer inspection.
+- **Punycode hostname:** Flags hostnames containing `xn--` for further inspection.
+|
 
 ## Tech Stack
 
