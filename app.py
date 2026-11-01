@@ -51,6 +51,31 @@ if st.button("Analyze URL", type="primary"):
                 "A low score or zero findings does not guarantee that a URL is safe."
         )
 
+            
+            st.subheader("Detection Summary")
+
+            findings = report["findings"]
+            st.metric("Total Findings", len(findings))
+
+            severity_order = {
+                "low": 1,
+                "medium": 2,
+                "high": 3,
+            }
+
+            if findings:
+                highest_severity = max(
+                    findings,
+                    key=lambda finding: severity_order.get(
+                        finding["severity"].lower(), 0
+                    ),
+                )["severity"].title()
+
+                st.write(f"Highest Severity: **{highest_severity}**")
+                st.write("Assessment: Suspicious indicators detected")
+            else:
+                st.write("Highest Severity: **None**")
+                st.write("Assessment: No current rules triggered")
 
             st.subheader("Detection Findings")
 

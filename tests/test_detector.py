@@ -77,3 +77,16 @@ def test_punycode_hostname_triggers_finding():
     assert "PUNYCODE_HOST" in rules
     assert report["risk_score"] == 5
 
+def test_punycode_report_has_low_severity():
+    report = analyze_url("https://xn--e1afmkfd.example/login")
+
+    punycode_findings = [
+        finding
+        for finding in report["findings"]
+        if finding["rule"] == "PUNYCODE_HOST"
+    ]
+
+    assert len(punycode_findings) == 1
+    assert punycode_findings[0]["severity"] == "low"
+    assert report["risk_score"] == 5
+
