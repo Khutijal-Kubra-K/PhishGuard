@@ -9,22 +9,26 @@ from app.urlscan import (
     get_urlscan_result,
     submit_url_for_scanning,
 )
+from app.risk_engine import build_risk_assessment
 
 
 # Page configuration
 st.set_page_config(
     page_title="PhishGuard",
-    page_icon="🛡️",
+    page_icon="\U0001F6E1",
     layout="centered",
 )
 
 
 # Header
-st.title("🛡️ PhishGuard")
+st.title("\U0001F6E1 PhishGuard")
 st.subheader("Suspicious URL Analysis")
 st.write(
-    "Analyze URL structure for potentially suspicious indicators. "
-    "This tool uses simple rules and does not guarantee that a URL is safe."
+    "Analyze URLs using heuristic detection, "
+    "Google Safe Browsing, and URLScan.io."
+)
+st.caption(
+    "A low risk score does not guarantee that a URL is safe."
 )
 
 
@@ -36,21 +40,21 @@ url = st.text_input(
 
 
 # Initialize session state
-if "analysis_report" not in st.session_state:
-    st.session_state["analysis_report"] = None
+defaults = {
+    "analysis_report": None,
+    "urlscan_scan_id": None,
+    "urlscan_result_url": None,
+    "urlscan_details": None,
+}
 
-if "urlscan_scan_id" not in st.session_state:
-    st.session_state["urlscan_scan_id"] = None
-
-if "urlscan_result_url" not in st.session_state:
-    st.session_state["urlscan_result_url"] = None
-
-if "urlscan_details" not in st.session_state:
-    st.session_state["urlscan_details"] = None
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 
 # Analyze URL
 if st.button("Analyze URL", type="primary"):
+
     if not url.strip():
         st.warning("Please enter a URL first.")
 
@@ -58,233 +62,290 @@ if st.button("Analyze URL", type="primary"):
         try:
             clean_url = url.strip()
 
-            # Run URL analysis and reputation checks
-            report = analyze_url(clean_url)
-            reputation = check_url_reputation(clean_url)
+            with st.spinner("Analyzing URL..."):
 
-            report["reputation"] = reputation
+                # Heuristic analysis
+                heuristic_report = analyze_url(clean_url)
 
-            # Submit URL to URLScan.io
-            urlscan_result = submit_url_for_scanning(clean_url)
-            report["urlscan"] = urlscan_result
+                # Google Safe Browsing
+                reputation = check_url_reputation(clean_url)
 
-            # Save report so it survives Streamlit reruns
-            st.session_state["analysis_report"] = report
-
-            # Reset previous scan details
-            st.session_state["urlscan_details"] = None
-
-            if urlscan_result["status"] == "submitted":
-                st.session_state["urlscan_scan_id"] = (
-                    urlscan_result["scan_id"]
+                # Submit URL to URLScan.io
+                urlscan_submission = submit_url_for_scanning(
+                    clean_url
                 )
-                st.session_state["urlscan_result_url"] = (
-                    urlscan_result["result_url"]
-                )
-            else:
-                st.session_state["urlscan_scan_id"] = None
-                st.session_state["urlscan_result_url"] = None
 
-        except (ValueError, TypeError) as error:
+                # Save scan information
+                scan_id = None
+                result_url = None
+
+                if urlscan_submission["status"] == "submitted":
+                    scan_id = urlscan_submission["scan_id"]
+                    result_url = urlscan_submission["result_url"]
+
+                # URLScan submission is not a completed verdict.
+                # Keep it pending until the actual report is retrieved.
+                initial_urlscan_result = {
+                    "status": (
+                        "pending"
+                        if scan_id
+                        else "error"
+                    ),
+                    "message": urlscan_submission["message"],
+                }
+
+                # Build unified assessment
+                assessment = build_risk_assessment(
+                    heuristic_report,
+                    reputation,
+                    initial_urlscan_result,
+                )
+
+                # Combine all report data
+                report = {
+                    **heuristic_report,
+                    "reputation": reputation,
+                    "urlscan": urlscan_submission,
+                    "risk_assessment": assessment,
+                }
+
+                st.session_state["analysis_report"] = report
+                st.session_state["urlscan_scan_id"] = scan_id
+                st.session_state["urlscan_result_url"] = result_url
+                st.session_state["urlscan_details"] = None
+
+        except (ValueError, TypeError, KeyError) as error:
             st.error(f"Could not analyze this input: {error}")
 
 
-# Retrieve URLScan.io results independently of Analyze URL
+# Retrieve URLScan.io results
 if st.session_state["urlscan_scan_id"]:
+
     if st.button("Check URLScan.io Results"):
-        with st.spinner("Retrieving URLScan.io scan results..."):
+
+        with st.spinner("Retrieving URLScan.io results..."):
+
             scan_details = get_urlscan_result(
                 st.session_state["urlscan_scan_id"]
             )
+            st.session_state["urlscan_details"] = scan_details
 
-        st.session_state["urlscan_details"] = scan_details
+            # Rebuild assessment using completed scan results
+            report = st.session_state["analysis_report"]
+
+            report["risk_assessment"] = build_risk_assessment(
+                report,
+                report["reputation"],
+                scan_details,
+            )
 
 
-# Display the saved report after every rerun
+# Display saved report
 report = st.session_state["analysis_report"]
 
 if report is not None:
+
     st.divider()
 
-    # Google Safe Browsing
-    st.subheader("Threat Intelligence — Google Safe Browsing")
+    assessment = report["risk_assessment"]
+
+    # Unified Risk Assessment
+    st.header("Unified Risk Assessment")
+
+    risk_score = assessment["risk_score"]
+    risk_level = assessment["risk_level"]
+
+    st.metric(
+        "Overall Risk Score",
+        f"{risk_score}/100",
+    )
+
+    st.progress(risk_score / 100)
+
+    if risk_level == "Critical":
+        st.error(f"CRITICAL RISK — {assessment['verdict']}")
+
+    elif risk_level == "High":
+        st.error(f"HIGH RISK — {assessment['verdict']}")
+
+    elif risk_level == "Medium":
+        st.warning(f"MEDIUM RISK — {assessment['verdict']}")
+
+    else:
+        st.success(f"LOW RISK — {assessment['verdict']}")
+
+    st.caption(assessment["note"])
+
+    # Evidence breakdown
+    st.subheader("Detection Evidence")
+
+    for item in assessment["evidence"]:
+
+        with st.container(border=True):
+
+            st.markdown(f"**{item['source']}**")
+
+            status = item["status"]
+
+            if status in ("unsafe", "malicious"):
+                st.error(status.replace("_", " ").title())
+
+            elif status == "no_match":
+                st.success("No known threat reported")
+
+            elif status == "no_malicious_verdict":
+                st.info("No malicious verdict reported")
+
+            elif status == "pending":
+                st.info("Scan pending")
+
+            elif status == "complete":
+                st.success("Scan completed")
+
+            elif status == "inconclusive":
+                st.warning("Verdict inconclusive")
+
+            else:
+                st.warning(status.replace("_", " ").title())
+
+            st.write(item["message"])
+
+            if item.get("threat_types"):
+                st.write(
+                    "**Threat types:** "
+                    + ", ".join(item["threat_types"])
+                )
+
+            if item.get("categories"):
+                st.write(
+                    "**Categories:** "
+                    + ", ".join(item["categories"])
+                )
+
+            if item.get("urlscan_score") is not None:
+                st.write(
+                    f"**URLScan verdict score:** "
+                    f"{item['urlscan_score']}"
+                )
+
+            if item.get("result_url"):
+                st.link_button(
+                    "Open URLScan.io Report",
+                    item["result_url"],
+                )
+
+    # Google Safe Browsing details
+    st.subheader("Google Safe Browsing")
 
     reputation = report["reputation"]
 
     if reputation["status"] == "unsafe":
         st.error("Known threat detected")
-        st.write(reputation["message"])
-
-        if reputation.get("threat_types"):
-            st.write(
-                "Threat types: "
-                + ", ".join(reputation["threat_types"])
-            )
 
     elif reputation["status"] == "safe":
         st.success("No known threats reported")
-        st.write(reputation["message"])
 
     else:
-        st.warning("Threat intelligence check unavailable")
-        st.write(reputation["message"])
+        st.warning("Threat intelligence unavailable")
 
-    st.caption(
-        "Threat intelligence is one signal, not a guarantee of safety. "
-        "An unavailable check does not mean the URL is safe."
-    )
+    st.write(reputation["message"])
 
-    # URLScan.io investigation
+    # URLScan.io details
     st.subheader("URLScan.io Investigation")
 
-    urlscan_result = report["urlscan"]
+    urlscan_submission = report["urlscan"]
+    scan_details = st.session_state["urlscan_details"]
 
-    if urlscan_result["status"] == "submitted":
-        st.success("URL submitted to URLScan.io")
-        st.write(urlscan_result["message"])
+    if urlscan_submission["status"] == "submitted":
+
+        st.success("URL submitted successfully")
 
         st.link_button(
             "Open URLScan.io Results",
             st.session_state["urlscan_result_url"],
         )
 
-        st.caption(
-            "The scan may take time to complete. "
-            "Use Check URLScan.io Results to retrieve the report."
-        )
+        if scan_details and scan_details["status"] == "complete":
+            st.success("URLScan.io investigation completed successfully.")
+        else:
+            st.caption(
+                "Wait for the scan to complete, then click "
+                "Check URLScan.io Results."
+            )
 
     else:
-        st.warning("URLScan.io scan could not be submitted")
-        st.write(urlscan_result["message"])
-
-    # Display retrieved scan details
-    scan_details = st.session_state["urlscan_details"]
+        st.warning(urlscan_submission["message"])
 
     if scan_details:
-        st.subheader("URLScan.io Scan Results")
 
         if scan_details["status"] == "complete":
-            st.write(
-                f"**Page title:** {scan_details['page_title']}"
-            )
-            st.write(f"**Domain:** {scan_details['domain']}")
-            st.write(f"**IP address:** {scan_details['ip']}")
-            st.write(f"**Country:** {scan_details['country']}")
 
-            if scan_details["malicious"] is True:
-                st.error(
-                    "URLScan.io reports a malicious verdict."
-                )
-            elif scan_details["malicious"] is False:
-                st.success(
-                    "URLScan.io does not report a malicious verdict."
-                )
-            else:
-                st.info("No malicious verdict is available.")
+            st.markdown("**Retrieved scan information**")
 
             st.write(
-                f"**Verdict score:** {scan_details['score']}"
+                f"Page title: {scan_details['page_title']}"
             )
 
-            categories = scan_details.get("categories") or []
             st.write(
-                "**Categories:** "
-                + (
-                    ", ".join(categories)
-                    if categories
-                    else "None reported"
-                )
+                f"Domain: {scan_details['domain']}"
             )
 
-            st.link_button(
-                "View Full URLScan.io Report",
-                scan_details["result_url"],
+            st.write(
+                f"IP address: {scan_details['ip']}"
+            )
+
+            st.write(
+                f"Country: {scan_details['country']}"
             )
 
         elif scan_details["status"] == "pending":
+
             st.info(
                 "The scan is still processing. "
-                "Wait a little, then click Check URLScan.io Results again."
+                "Check again later."
             )
 
         else:
             st.warning(scan_details["message"])
 
-    # Heuristic analysis
-    st.subheader("Analysis Results")
+    # Heuristic findings
+    st.subheader("Heuristic Analysis")
 
-    score = report["risk_score"]
-    st.metric("Heuristic Risk Score", f"{score}/100")
-
-    if score >= 50:
-        st.error(
-            "Risk level: High — multiple suspicious indicators detected."
-        )
-    elif score >= 20:
-        st.warning(
-            "Risk level: Moderate — suspicious indicators detected."
-        )
-    elif score > 0:
-        st.info(
-            "Risk level: Low — some indicators were detected."
-        )
-    else:
-        st.success("No current rules triggered.")
-
-    st.caption(
-        "A low score or zero findings does not guarantee that a URL is safe."
+    st.metric(
+        "Heuristic Risk Score",
+        f"{report['risk_score']}/100",
     )
 
-    # Detection summary
-    st.subheader("Detection Summary")
-
     findings = report["findings"]
+
     st.metric("Total Findings", len(findings))
 
-    severity_order = {
-        "low": 1,
-        "medium": 2,
-        "high": 3,
-    }
-
     if findings:
-        highest_severity = max(
-            findings,
-            key=lambda finding: severity_order.get(
-                finding["severity"].lower(), 0
-            ),
-        )["severity"].title()
 
-        st.write(f"Highest Severity: **{highest_severity}**")
-        st.write("Assessment: Suspicious indicators detected")
-    else:
-        st.write("Highest Severity: **None**")
-        st.write("Assessment: No current rules triggered")
-
-    # Detection findings
-    st.subheader("Detection Findings")
-
-    if findings:
         for finding in findings:
+
             with st.container(border=True):
+
                 st.markdown(
                     f"**{finding['rule'].replace('_', ' ').title()}**"
                 )
+
                 st.caption(
                     f"Severity: {finding['severity'].title()}"
                 )
-                st.write(finding["reason"])
-    else:
-        st.write("No current detection rules were triggered.")
-        st.caption("This does not guarantee that the URL is safe.")
 
-    # Extracted URL features
+                st.write(finding["reason"])
+
+    else:
+        st.success("No heuristic rules were triggered.")
+
+    # Extracted features
     with st.expander("View extracted URL features"):
         st.json(report["features"])
 
-    st.caption(report["note"])
-
     # Export reports
+    st.subheader("Export Security Report")
+
     csv_data = generate_csv_report(report)
 
     st.download_button(

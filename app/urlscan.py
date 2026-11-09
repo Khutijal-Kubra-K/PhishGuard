@@ -1,4 +1,6 @@
 
+"""URLScan.io integration for PhishGuard."""
+
 import os
 
 import requests
@@ -37,10 +39,14 @@ def submit_url_for_scanning(url: str) -> dict:
         if response.status_code == 429:
             return {
                 "status": "error",
-                "message": "URLScan.io rate limit reached. Try again later.",
+                "message": (
+                    "URLScan.io rate limit reached. "
+                    "Try again later."
+                ),
             }
 
         response.raise_for_status()
+
         data = response.json()
 
         scan_id = data.get("uuid")
@@ -58,7 +64,9 @@ def submit_url_for_scanning(url: str) -> dict:
                 "result",
                 f"https://urlscan.io/result/{scan_id}/",
             ),
-            "message": "URL submitted successfully. Results may take time.",
+            "message": (
+                "URL submitted successfully. Results may take time."
+            ),
         }
 
     except requests.Timeout:
@@ -66,16 +74,19 @@ def submit_url_for_scanning(url: str) -> dict:
             "status": "error",
             "message": "URLScan.io request timed out.",
         }
+
     except requests.RequestException:
         return {
             "status": "error",
             "message": "Could not connect to URLScan.io.",
         }
+
     except ValueError:
         return {
             "status": "error",
             "message": "URLScan.io returned an invalid response.",
         }
+
 
 def get_urlscan_result(scan_id: str) -> dict:
     """Retrieve a completed URLScan.io report."""
@@ -105,26 +116,43 @@ def get_urlscan_result(scan_id: str) -> dict:
             timeout=15,
         )
 
+        # Scan is not ready yet
         if response.status_code == 404:
             return {
                 "status": "pending",
+                "http_status": 404,
                 "message": (
-                    "The scan is still processing. "
-                    "Please check again later."
+                    "URLScan.io has not made this result available yet. "
+                    "Please wait and try again."
                 ),
             }
 
+        # Result is no longer available
         if response.status_code == 410:
             return {
                 "status": "error",
-                "message": "This scan result is no longer available.",
+                "http_status": 410,
+                "message": (
+                    "This scan result is no longer available."
+                ),
             }
 
-        response.raise_for_status()
+        # Handle other HTTP errors
+        if response.status_code != 200:
+            return {
+                "status": "error",
+                "http_status": response.status_code,
+                "message": (
+                    f"URLScan.io returned HTTP "
+                    f"{response.status_code}."
+                ),
+            }
+
         data = response.json()
 
         page = data.get("page", {})
         verdicts = data.get("verdicts", {})
+
         urlscan_verdict = verdicts.get("urlscan", {})
         overall_verdict = verdicts.get("overall", {})
 
@@ -136,6 +164,7 @@ def get_urlscan_result(scan_id: str) -> dict:
 
         return {
             "status": "complete",
+            "http_status": 200,
             "message": "URLScan.io scan results retrieved.",
             "result_url": (
                 f"https://urlscan.io/result/{scan_id}/"
@@ -152,13 +181,19 @@ def get_urlscan_result(scan_id: str) -> dict:
     except requests.Timeout:
         return {
             "status": "error",
-            "message": "URLScan.io result request timed out.",
+            "message": (
+                "URLScan.io result request timed out."
+            ),
         }
-    except requests.RequestException:
+
+    except requests.RequestException as error:
         return {
             "status": "error",
-            "message": "Could not retrieve URLScan.io results.",
+            "message": (
+                f"URLScan.io connection error: {error}"
+            ),
         }
+
     except ValueError:
         return {
             "status": "error",

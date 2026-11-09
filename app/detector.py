@@ -44,8 +44,8 @@ def analyze_url(url: str) -> dict:
             "reason": "The hostname contains three or more subdomains."
         })
         score += 10
-    
-    # Rule: URL shortener domain
+
+    # Rule 5: URL shortener domain
     shortener_domains = {
         "bit.ly",
         "tinyurl.com",
@@ -68,7 +68,7 @@ def analyze_url(url: str) -> dict:
         })
         score += 10
 
-    # Rule 5: @ symbol in URL
+    # Rule 6: @ symbol in URL
     if features["has_at_symbol"]:
         findings.append({
             "rule": "AT_SYMBOL",
@@ -76,10 +76,8 @@ def analyze_url(url: str) -> dict:
             "reason": "The URL contains an @ symbol, which can obscure the hostname."
         })
         score += 20
-    
-    # Rule 8: Punycode hostname
-    hostname = features["hostname"].lower()
 
+    # Rule 7: Punycode hostname
     if "xn--" in hostname:
         findings.append({
             "rule": "PUNYCODE_HOST",
@@ -92,9 +90,7 @@ def analyze_url(url: str) -> dict:
         })
         score += 5
 
-    score = min(score, 100)
-    
-    # Rule 7: Suspicious keywords in the URL
+    # Rule 8: Suspicious keywords
     suspicious_keywords = {
         "verify-account",
         "password-reset",
@@ -103,6 +99,7 @@ def analyze_url(url: str) -> dict:
     }
 
     normalized_url = url.lower()
+
     matched_keywords = [
         keyword
         for keyword in suspicious_keywords
@@ -121,10 +118,23 @@ def analyze_url(url: str) -> dict:
         })
         score += 5
 
+    # Keep risk score within 0–100
+    score = min(score, 100)
+
+    # Classify heuristic risk level
+    if score >= 70:
+        risk_level = "Critical"
+    elif score >= 40:
+        risk_level = "High"
+    elif score >= 20:
+        risk_level = "Medium"
+    else:
+        risk_level = "Low"
 
     return {
         "url": url,
         "risk_score": score,
+        "risk_level": risk_level,
         "findings": findings,
         "features": features,
         "note": (

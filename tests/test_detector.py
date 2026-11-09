@@ -89,4 +89,69 @@ def test_punycode_report_has_low_severity():
     assert len(punycode_findings) == 1
     assert punycode_findings[0]["severity"] == "low"
     assert report["risk_score"] == 5
+    
+import pytest
+
+
+@pytest.mark.parametrize(
+    "features, expected_level",
+    [
+        (
+            {
+                "has_ip_host": False,
+                "uses_https": True,
+                "url_length": 30,
+                "subdomain_count": 0,
+                "hostname": "example.com",
+                "has_at_symbol": False,
+            },
+            "Low",
+        ),
+        (
+            {
+                "has_ip_host": False,
+                "uses_https": True,
+                "url_length": 30,
+                "subdomain_count": 0,
+                "hostname": "example.com",
+                "has_at_symbol": True,
+            },
+            "Medium",
+        ),
+        (
+            {
+                "has_ip_host": False,
+                "uses_https": True,
+                "url_length": 150,
+                "subdomain_count": 3,
+                "hostname": "example.com",
+                "has_at_symbol": True,
+            },
+            "High",
+        ),
+        (
+            {
+                "has_ip_host": True,
+                "uses_https": False,
+                "url_length": 150,
+                "subdomain_count": 3,
+                "hostname": "bit.ly",
+                "has_at_symbol": True,
+            },
+            "Critical",
+        ),
+    ],
+)
+def test_risk_level_classification(
+    monkeypatch, features, expected_level
+):
+    monkeypatch.setattr(
+        "app.detector.extract_features",
+        lambda url: features
+    )
+
+    report = analyze_url("https://example.com/test")
+
+    assert report["risk_level"] == expected_level
+
 
