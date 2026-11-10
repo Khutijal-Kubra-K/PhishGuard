@@ -14,29 +14,138 @@ from app.risk_engine import build_risk_assessment
 
 # Page configuration
 st.set_page_config(
-    page_title="PhishGuard",
-    page_icon="\U0001F6E1",
-    layout="centered",
+    page_title="PhishGuard | URL Threat Intelligence",
+    page_icon="🛡️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+# Custom PhishGuard Theme
+st.markdown(
+    """
+    <style>
+    /* Main application background */
+    .stApp {
+        background-color: #0B1120;
+        color: #E2E8F0;
+    }
+
+    /* Sidebar styling */
+    section[data-testid="stSidebar"] {
+        background-color: #111827;
+        border-right: 1px solid #263449;
+    }
+
+    /* Main headings */
+    h1, h2, h3 {
+        color: #F8FAFC;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        background-color: #16A34A;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 600;
+    }
+
+    .stButton > button:hover {
+        background-color: #15803D;
+        color: white;
+        border: 1px solid #4ADE80;
+    }
+
+    /* URL input */
+    .stTextInput input {
+        background-color: #1E293B;
+        color: #F8FAFC;
+        border: 1px solid #334155;
+        border-radius: 8px;
+    }
+
+    /* Dividers */
+    hr {
+        border-color: #334155;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 
-# Header
-st.title("\U0001F6E1 PhishGuard")
-st.subheader("Suspicious URL Analysis")
-st.write(
-    "Analyze URLs using heuristic detection, "
-    "Google Safe Browsing, and URLScan.io."
+# Sidebar
+with st.sidebar:
+    st.markdown("## 🛡️ PHISHGUARD")
+    st.caption("URL THREAT INTELLIGENCE")
+
+    st.divider()
+
+    st.markdown("### Navigation")
+
+    page = st.radio(
+        "Go to",
+        [
+            "URL Scanner",
+            "About PhishGuard",
+        ],
+        label_visibility="collapsed",
+    )
+
+    st.divider()
+
+    st.markdown("### System Status")
+    st.success("Detection Engine Ready")
+    st.info("Google Safe Browsing Integration")
+    st.info("URLScan.io Integration")
+
+    st.divider()
+
+    st.caption("PhishGuard | Cybersecurity Project")
+
+
+
+
+# Main Dashboard Header
+st.markdown(
+    """
+<div style="background:linear-gradient(120deg,#172554,#0F766E);padding:30px;border-radius:14px;border:1px solid #256D70;margin-bottom:25px;">
+<div style="color:#86EFAC;font-size:13px;font-weight:bold;letter-spacing:2px;">URL THREAT INTELLIGENCE PLATFORM</div>
+<h1 style="color:#FFFFFF;margin:12px 0 8px 0;font-size:36px;">🛡️ PhishGuard</h1>
+<p style="color:#D1FAE5;font-size:17px;margin-bottom:15px;">Detect suspicious URLs. Investigate threats. Make informed security decisions.</p>
+<span style="background-color:#14532D;color:#BBF7D0;padding:7px 12px;border-radius:20px;font-size:12px;font-weight:bold;">● ANALYSIS ENGINE READY</span>
+</div>
+""",
+    unsafe_allow_html=True,
 )
+
 st.caption(
     "A low risk score does not guarantee that a URL is safe."
 )
 
+# URL Scanner Card
+with st.container(border=True):
 
-# URL input
-url = st.text_input(
-    "Enter a URL",
-    placeholder="https://example.com/login",
-)
+    st.markdown("### 🔎 Suspicious URL Scanner")
+
+    st.caption(
+        "Enter a website URL below to check for suspicious "
+        "patterns and known security threats."
+    )
+
+    url = st.text_input(
+        "Website URL",
+        placeholder="https://example.com/login",
+        label_visibility="collapsed",
+    )
+
+    analyze_clicked = st.button(
+        "🛡️ Analyze URL",
+        type="primary",
+        use_container_width=True,
+    )
+
 
 
 # Initialize session state
@@ -53,7 +162,7 @@ for key, value in defaults.items():
 
 
 # Analyze URL
-if st.button("Analyze URL", type="primary"):
+if analyze_clicked:
 
     if not url.strip():
         st.warning("Please enter a URL first.")
@@ -129,7 +238,6 @@ if st.session_state["urlscan_scan_id"]:
                 st.session_state["urlscan_scan_id"]
             )
             st.session_state["urlscan_details"] = scan_details
-
             # Rebuild assessment using completed scan results
             report = st.session_state["analysis_report"]
 
@@ -149,106 +257,123 @@ if report is not None:
 
     assessment = report["risk_assessment"]
 
+    
+    
     # Unified Risk Assessment
-    st.header("Unified Risk Assessment")
+    st.header("🛡️ Security Risk Assessment")
 
     risk_score = assessment["risk_score"]
     risk_level = assessment["risk_level"]
+    total_findings = len(report["findings"])
 
-    st.metric(
-        "Overall Risk Score",
-        f"{risk_score}/100",
-    )
+    # Three dashboard metric cards
+    col1, col2, col3 = st.columns(3)
 
+    with col1:
+        with st.container(border=True):
+            st.metric(
+                "Overall Risk Score",
+                f"{risk_score}/100",
+            )
+
+    with col2:
+        with st.container(border=True):
+            st.metric(
+                "Risk Level",
+                risk_level,
+            )
+
+    with col3:
+        with st.container(border=True):
+            st.metric(
+                "Detection Findings",
+                total_findings,
+            )
+
+    # Risk progress indicator
+    st.markdown("#### Risk Score Indicator")
     st.progress(risk_score / 100)
 
     if risk_level == "Critical":
-        st.error(f"CRITICAL RISK — {assessment['verdict']}")
+        st.error(f"🚨 CRITICAL RISK — {assessment['verdict']}")
 
     elif risk_level == "High":
-        st.error(f"HIGH RISK — {assessment['verdict']}")
+        st.error(f"🔴 HIGH RISK — {assessment['verdict']}")
 
     elif risk_level == "Medium":
-        st.warning(f"MEDIUM RISK — {assessment['verdict']}")
+        st.warning(f"🟠 MEDIUM RISK — {assessment['verdict']}")
 
     else:
-        st.success(f"LOW RISK — {assessment['verdict']}")
+        st.success(f"🟢 LOW RISK — {assessment['verdict']}")
 
     st.caption(assessment["note"])
 
     # Evidence breakdown
-    st.subheader("Detection Evidence")
+    st.subheader("Threat Intelligence Sources")
 
-    for item in assessment["evidence"]:
+    evidence_items = assessment["evidence"]
+    columns = st.columns(3)
 
-        with st.container(border=True):
+    for index, item in enumerate(evidence_items):
 
-            st.markdown(f"**{item['source']}**")
+        with columns[index % 3]:
 
-            status = item["status"]
+            with st.container(border=True):
 
-            if status in ("unsafe", "malicious"):
-                st.error(status.replace("_", " ").title())
+                st.markdown(f"**{item['source']}**")
 
-            elif status == "no_match":
-                st.success("No known threat reported")
+                status = item["status"]
 
-            elif status == "no_malicious_verdict":
-                st.info("No malicious verdict reported")
+                if status in ("unsafe", "malicious"):
+                    st.error(status.replace("_", " ").title())
 
-            elif status == "pending":
-                st.info("Scan pending")
+                elif status == "no_match":
+                    st.success("No known threat reported")
 
-            elif status == "complete":
-                st.success("Scan completed")
+                elif status == "no_malicious_verdict":
+                    st.info("No malicious verdict reported")
 
-            elif status == "inconclusive":
-                st.warning("Verdict inconclusive")
+                elif status == "pending":
+                    st.info("Scan pending")
 
-            else:
-                st.warning(status.replace("_", " ").title())
+                elif status == "complete":
+                    st.success("Scan completed")
 
-            st.write(item["message"])
+                elif status == "inconclusive":
+                    st.warning("Verdict inconclusive")
 
-            if item.get("threat_types"):
-                st.write(
-                    "**Threat types:** "
-                    + ", ".join(item["threat_types"])
-                )
+                else:
+                    st.warning(status.replace("_", " ").title())
 
-            if item.get("categories"):
-                st.write(
-                    "**Categories:** "
-                    + ", ".join(item["categories"])
-                )
+                st.write(item["message"])
 
-            if item.get("urlscan_score") is not None:
-                st.write(
-                    f"**URLScan verdict score:** "
-                    f"{item['urlscan_score']}"
-                )
+                if item.get("threat_types"):
+                    st.caption(
+                        "Threat types: "
+                        + ", ".join(item["threat_types"])
+                    )
 
-            if item.get("result_url"):
-                st.link_button(
-                    "Open URLScan.io Report",
-                    item["result_url"],
-                )
+                if item.get("categories"):
+                    st.caption(
+                        "Categories: "
+                        + ", ".join(item["categories"])
+                    )
 
-    # Google Safe Browsing details
-    st.subheader("Google Safe Browsing")
+                if item.get("urlscan_score") is not None:
+                    st.write(
+                        f"URLScan verdict score: "
+                        f"{item['urlscan_score']}"
+                    )
 
-    reputation = report["reputation"]
+                if item.get("result_url"):
+                    st.link_button(
+                        "Open URLScan.io Report",
+                        item["result_url"],
+                        use_container_width=True,
+                    )
 
-    if reputation["status"] == "unsafe":
-        st.error("Known threat detected")
 
-    elif reputation["status"] == "safe":
-        st.success("No known threats reported")
-
-    else:
-        st.warning("Threat intelligence unavailable")
-
-    st.write(reputation["message"])
+   
 
     # URLScan.io details
     st.subheader("URLScan.io Investigation")
@@ -308,18 +433,30 @@ if report is not None:
         else:
             st.warning(scan_details["message"])
 
+   
     # Heuristic findings
     st.subheader("Heuristic Analysis")
 
-    st.metric(
-        "Heuristic Risk Score",
-        f"{report['risk_score']}/100",
-    )
-
     findings = report["findings"]
 
-    st.metric("Total Findings", len(findings))
+    # Heuristic metric cards
+    col1, col2 = st.columns(2)
 
+    with col1:
+        with st.container(border=True):
+            st.metric(
+                "Heuristic Risk Score",
+                f"{report['risk_score']}/100",
+            )
+
+    with col2:
+        with st.container(border=True):
+            st.metric(
+                "Total Findings",
+                len(findings),
+            )
+
+    # Display individual findings
     if findings:
 
         for finding in findings:
