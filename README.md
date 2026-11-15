@@ -1,5 +1,7 @@
 # 🛡️ PhishGuard — Suspicious URL Analyzer
 Try PhishGuard live: https://mexyr66kwqkofpgunueqjy.streamlit.app
+
+
 PhishGuard is a Python-based cybersecurity project that analyzes URL structures and identifies potentially suspicious indicators using explainable, rule-based detection.
 
 The application provides a simple Streamlit dashboard that displays a heuristic risk score, detection findings, and extracted URL features.
