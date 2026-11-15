@@ -24,51 +24,156 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    /* Main application background */
+    /* Main application */
     .stApp {
         background-color: #0B1120;
         color: #E2E8F0;
     }
 
-    /* Sidebar styling */
+    /* Main content spacing */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 1400px;
+    }
+
+    /* Sidebar */
     section[data-testid="stSidebar"] {
         background-color: #111827;
         border-right: 1px solid #263449;
     }
 
-    /* Main headings */
+    /* Headings */
     h1, h2, h3 {
         color: #F8FAFC;
+        font-weight: 700;
     }
+
+    /* Body text */
+    p, label, .stMarkdown {
+        color: #CBD5E1;
+    }
+
+    
+    div[data-testid="stMetric"] {
+        background-color: #111C2E;
+        border: 1px solid #263B53;
+        padding: 18px;
+        border-radius: 12px;
+        transition: all 0.25s ease;
+    }
+
+    div[data-testid="stMetric"]:hover {
+        border-color: #22C55E;
+        box-shadow: 0 4px 16px rgba(34, 197, 94, 0.18);
+        transform: translateY(-3px);
+    }
+
+    div[data-testid="stMetricLabel"] {
+        color: #94A3B8;
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: #F8FAFC;
+    }
+
+    
+    /* Containers and cards */
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        background-color: #111C2E;
+        border: 1px solid #263B53;
+        border-radius: 12px;
+        transition: border-color 0.25s ease,
+                    box-shadow 0.25s ease,
+                    transform 0.25s ease;
+    }
+
+    div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+        border-color: #22C55E !important;
+        box-shadow: 0 4px 16px rgba(34, 197, 94, 0.18);
+        transform: translateY(-2px);
+    }
+
+    
+
 
     /* Buttons */
     .stButton > button {
         background-color: #16A34A;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.6rem 1.2rem;
+        color: #FFFFFF;
+        border: 1px solid #16A34A;
+        border-radius: 9px;
+        padding: 0.65rem 1.2rem;
         font-weight: 600;
+        transition: all 0.2s ease;
     }
 
+    
     .stButton > button:hover {
         background-color: #15803D;
-        color: white;
-        border: 1px solid #4ADE80;
+        border-color: #4ADE80;
+        color: #FFFFFF;
+        box-shadow: 0 0 12px rgba(34, 197, 94, 0.45);
+        transform: translateY(-2px);
     }
+
 
     /* URL input */
     .stTextInput input {
-        background-color: #1E293B;
+        background-color: #172337;
         color: #F8FAFC;
         border: 1px solid #334155;
-        border-radius: 8px;
+        border-radius: 9px;
     }
+
+    .stTextInput input:focus {
+        border-color: #4ADE80;
+        box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.25),
+                    0 0 12px rgba(34, 197, 94, 0.15);
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    
 
     /* Dividers */
     hr {
-        border-color: #334155;
+        border-color: #263449;
     }
+
+    /* Progress bar */
+    div[data-testid="stProgressBar"] > div > div {
+        background-color: #22C55E;
+    }
+
+    /* Expander */
+    details {
+        background-color: #111C2E;
+        border: 1px solid #263B53;
+        border-radius: 10px;
+    }
+
+    /* Captions */
+    .stCaption {
+        color: #94A3B8;
+    }
+
+    /* Threat Intelligence card hover effect */
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.st-key-threat_card) {
+        transition: transform 0.25s ease,
+                    box-shadow 0.25s ease,
+                    border-color 0.25s ease;
+    }
+
+    div[data-testid="stVerticalBlockBorderWrapper"]:has(.st-key-threat_card):hover {
+        border-color: #22C55E !important;
+        box-shadow: 0 4px 16px rgba(34, 197, 94, 0.25);
+        transform: translateY(-3px);
+    }
+
+    
+
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -95,11 +200,48 @@ with st.sidebar:
 
     st.divider()
 
+    
     st.markdown("### System Status")
-    st.success("Detection Engine Ready")
-    st.info("Google Safe Browsing Integration")
-    st.info("URLScan.io Integration")
 
+    st.markdown(
+        """
+        <div style="
+            background-color: #123C32;
+            border: 1px solid #166534;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            color: #86EFAC;
+            font-size: 13px;
+        ">
+        ● Detection Engine Ready
+        </div>
+
+        <div style="
+            background-color: #172B45;
+            border: 1px solid #294766;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            color: #93C5FD;
+            font-size: 13px;
+        ">
+            ● Google Safe Browsing
+        </div>
+
+        <div style="
+            background-color: #172B45;
+            border: 1px solid #294766;
+            border-radius: 8px;
+            padding: 10px;
+            color: #93C5FD;
+            font-size: 13px;
+        ">
+            ● URLScan.io Integration
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     st.divider()
 
     st.caption("PhishGuard | Cybersecurity Project")
@@ -126,7 +268,6 @@ st.caption(
 
 # URL Scanner Card
 with st.container(border=True):
-
     st.markdown("### 🔎 Suspicious URL Scanner")
 
     st.caption(
@@ -147,6 +288,7 @@ with st.container(border=True):
     )
 
 
+    
 
 # Initialize session state
 defaults = {
@@ -318,8 +460,8 @@ if report is not None:
 
         with columns[index % 3]:
 
-            with st.container(border=True):
-
+            
+            with st.container(border=True, key=f"threat_card_{index}"):
                 st.markdown(f"**{item['source']}**")
 
                 status = item["status"]
