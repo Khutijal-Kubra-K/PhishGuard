@@ -2,7 +2,7 @@
 """Google Safe Browsing reputation checks for PhishGuard."""
 
 import os
-
+import streamlit as st
 import requests
 from dotenv import load_dotenv
 
@@ -16,7 +16,12 @@ SAFE_BROWSING_URL = (
 def check_url_reputation(url: str) -> dict:
     """Check a URL against Google's known-threat lists."""
 
-    api_key = os.getenv("SAFE_BROWSING_API_KEY")
+    try:
+        api_key = os.getenv("SAFE_BROWSING_API_KEY") or st.secrets.get(
+            "SAFE_BROWSING_API_KEY"
+        )
+    except Exception:
+        api_key = os.getenv("SAFE_BROWSING_API_KEY")
 
     if not api_key:
         return {

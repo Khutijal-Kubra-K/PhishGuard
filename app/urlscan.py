@@ -2,7 +2,7 @@
 """URLScan.io integration for PhishGuard."""
 
 import os
-
+import streamlit as st
 import requests
 from dotenv import load_dotenv
 
@@ -14,7 +14,12 @@ URLSCAN_API_URL = "https://urlscan.io/api/v1/scan/"
 def submit_url_for_scanning(url: str) -> dict:
     """Submit a URL to URLScan.io for analysis."""
 
-    api_key = os.getenv("URLSCAN_API_KEY")
+    try:
+        api_key = os.getenv("URLSCAN_API_KEY") or st.secrets.get(
+            "URLSCAN_API_KEY"
+        )
+    except Exception:
+        api_key = os.getenv("URLSCAN_API_KEY")
 
     if not api_key:
         return {
